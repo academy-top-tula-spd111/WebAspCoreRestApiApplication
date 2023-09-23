@@ -2,9 +2,184 @@
 <html>
 <head>
     <meta charset="utf-8" />
-    <title></title>
+    <title>Users list</title>
 </head>
 <body>
+    <h2>Users list</h2>
+    <div>
+        <input type="hidden" id="userId" />
+        <p>
+            Name:<br />
+            <input id="userName" />
+        </p>
+        <p>
+            Age:<br />
+            <input type="number" id="userAge" />
+        </p>
+        <p>
+            <button id="btnSave">Save</button>
+            <button id="btnReset">Reset</button>
+        </p>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Age</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
 
+    <script>
+        async function getUsers() {
+            const response = await fetch("/api/users", {
+                method: "GET",
+                headers: {"Accept": "application/json"}
+            });
+
+            if (response.ok === true) {
+                let users = await response.json();
+                let tbody = document.querySelector("tbody");
+                users.forEach(user => tbody.append(rowCreate(user)));
+            }
+        }
+
+        async function getUser(id) {
+            const response = await fetch(`api/users/${id}`, {
+                method: "GET",
+                headers: { "Accept": "application/json" }
+            });
+
+            if (response.ok === true) {
+                let user = await response.json();
+                document.getElementById("userId").value = user.id;
+                document.getElementById("userName").value = user.name;
+                document.getElementById("userAge").value = user.age;
+            }
+            else {
+                let error = await response.json();
+                console.log(error.message);
+            }
+        }
+
+        async function addUser(userName, userAge) {
+            const response = await fetch("api/users", {
+                method: "POST",
+                headers: {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    name: userName,
+                    age: parseInt(userAge, 10)
+                })
+            });
+
+            if (response.ok === true) {
+                let user = await response.json();
+                document.querySelector("tbody").append(rowCreate(user));
+            }
+            else {
+                let error = await response.json();
+                console.log(error.message);
+            }
+        }
+
+        async function editUser(userId, userName, userAge) {
+            const response = await fetch("/api/users", {
+                method: "PUT",
+                headers: {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    id: userId,
+                    name: userName,
+                    age: parseInt(userAge, 10)
+                })
+            });
+            if (response.ok === true) {
+                const user = await response.json();
+                const td = document.querySelector(`tr[data-rowid='${user.id}']`);
+                td.replaceWith(rowCreate(user));
+            }
+            else {
+                let error = await response.json();
+                console.log(error.message);
+            }
+        }
+
+        async function deleteUser(id) {
+            const response = await fetch(`/api/users/${id}`, {
+                method: "DELETE",
+                headers: { "Accept": "application/json" }
+            });
+            if (response.ok === true) {
+                let user = await response.json();
+                document.querySelector(`tr[data-rowid='${user.id}']`)
+                    .remove();
+            }
+            else {
+                let error = await response.json();
+                console.log(error.message);
+            }
+        }
+
+        function reset() {
+            document.getElementById("userId").value = "";
+            document.getElementById("userName").value = "";
+            document.getElementById("userAge").value = "";
+        }
+
+        function rowCreate(user) {
+            let tr = document.createElement("tr");
+            tr.setAttribute("data-rowid", user.id);
+
+            let tdName = document.createElement("td");
+            tdName.append(user.name);
+            tr.append(tdName);
+
+            let tdAge = document.createElement("td");
+            tdAge.append(user.age);
+            tr.append(tdAge);
+
+            let tdLinks = document.createElement("td");
+            let linkEdit = document.createElement("button");
+            linkEdit.append("Edit");
+            linkEdit.addEventListener("click", async () => await getUser(user.id));
+            tdLinks.append(linkEdit);
+
+            let linkDelete = document.createElement("button");
+            linkDelete.append("Delete");
+            linkDelete.addEventListener("click", async () => await deleteUser(user.id));
+            tdLinks.append(linkDelete);
+
+            tr.append(tdLinks);
+            return tr;
+        }
+
+        document.getElementById("btnReset")
+            .addEventListener("click", () => reset());
+
+        document.getElementById("btnSave")
+            .addEventListener("click", async () => {
+                let id = document.getElementById("userId").value;
+                let name = document.getElementById("userName").value;
+                let age = document.getElementById("userAge").value;
+
+                if (id === "")
+                    await addUser(name, age);
+                else
+                    await editUser(id, name, age);
+                reset();
+            });
+
+        getUsers();
+
+
+    </script>
 </body>
 </html>

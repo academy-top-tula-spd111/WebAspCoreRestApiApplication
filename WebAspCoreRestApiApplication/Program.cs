@@ -103,6 +103,7 @@ async Task UpdateUser(HttpResponse response, HttpRequest request)
             {
                 user.Name = userData.Name;
                 user.Age = userData.Age;
+                Console.WriteLine(user.Id);
                 await response.WriteAsJsonAsync(user);
             }
         }
